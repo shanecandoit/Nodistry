@@ -20,6 +20,17 @@ void setup(){
 void draw(){
   background(250);
   
+  // bg grid
+  stroke(240);
+  for(int x=0; x<width; x+=radius){
+    for(int y=radius; y<height; y+=radius){
+      // vert
+      line(x,radius,x,height);
+      // horiz
+      line(0,y,width,y);
+    }
+  }
+  
   // cursor box
   int mx = nearestMultOf(mouseX, radius);
   int my = nearestMultOf(mouseY, radius);
