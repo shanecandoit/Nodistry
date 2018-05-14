@@ -1,7 +1,4 @@
 
-import java.awt.Point;
-import java.awt.Color;
-
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -11,7 +8,16 @@ import java.util.TreeMap;
 Map<Long, Integer> nodes = new TreeMap();
 Map<Long, String> names = new TreeMap();
 
+int camX=0;
+int camY=0;
+
 int radius = 24;
+int mLeft  = 37;
+int mMid   = 3;
+int mRight = 39;
+
+int mDownX=0;
+int mDownY=0;
 
 void setup(){
   size(800,400);
@@ -38,28 +44,15 @@ void draw(){
   stroke(200);
   ellipse(mx,my,radius, radius);
   
-  //textSize(12);
-  textSize(radius/2);
-  fill(0);
-  stroke(0);
-  int low = height-30;
-  text("mouseX: "+mouseX, 10,low);
-  text("mouseY: "+mouseY, 10,low+15);
-  
-  text("nodeCount: "+nodes.size(), 100, low);
-  text("zoom: "+radius, 100, low+15);
-  
-  // instructions
-  String instruct ="Left-click to drop nodes with random names and colors";
-  //textSize(16);
-  textSize( 2/3 * radius);
-  fill(100);
-  text(instruct, 10,20);
+  // text to display variables and instructions
+  drawUI();
   
   // nodes
   for(long nodePos:nodes.keySet()){
     float x = floor(nodePos/1000);
+    x+=camX;
     float y = nodePos % 1000;
+    y+=camY;
     int col = nodes.get(nodePos);
     fill(col);
     ellipse( x,y, radius, radius );
@@ -67,27 +60,85 @@ void draw(){
     // name
     fill(0);
     //text(names.get(nodePos), x +(radius/4), y +(radius/4) );
+    textSize( radius /2 );
     text(names.get(nodePos), x -(radius/4), y +(radius/4));
   }
 }
 
+void drawUI(){
+  //
+  //textSize(12);
+  textSize(radius/2);
+  fill(0);
+  stroke(0);
+  int low = height-30;
+  text("mouseX: "+mouseX, 10,low);
+  text("mouseY: "+mouseY, 10,low+15);
+    
+  text("camX: "+camX, 200,low);
+  text("camY: "+camY, 200,low+15);
+  
+  text("mDownX: "+mDownX, 300,low);
+  text("mDownY: "+mDownY, 300,low+15);
+  
+  int dragX = mDownX - mouseX;
+  int dragY = mDownY - mouseY;
+  text("dragX: "+dragX, 400,low);
+  text("dragY: "+dragY, 400,low+15);
+  
+  text("nodeCount: "+nodes.size(), 100, low);
+  text("zoom: "+radius, 100, low+15);
+  
+  // instructions
+  String instruct ="Left-click to drop nodes with random names and colors";
+  //textSize(16);
+  textSize(  radius * 2/3.0 );
+  fill(100);
+  text(instruct, 10,20);
+
+}
+
 void mousePressed(){
   
+  println("mousePressed "+mouseX+" "+mouseY);
+  if(mouseButton==mMid){
+    mDownX=mouseX;
+    mDownY=mouseY;
+  }
 }
  
-int nearestMultOf( float number, float nearest){
-  //https://stackoverflow.com/questions/14196987/java-round-to-nearest-multiple-of-5-either-up-or-down
-  return (int) nearest*(ceil(abs(number/nearest)));
+void mouseDragged(){
+  //
+  int dragX = mDownX - mouseX;
+  int dragY = mDownY - mouseY;
+  
+  camX -= dragX/radius;
+  camY -= dragY/radius;
 }
 
 void mouseReleased(){
-  int mx = nearestMultOf(mouseX, radius);
-  int my = nearestMultOf(mouseY, radius);
-  long p = mx*1000+ my;
-  int col = color( random(255), random(255), random(255) );
-  nodes.put( p, col);
-  names.put(p, ""+randomChar());
-  println("node "+p+" "+col);
+  
+  //left click create node
+  if(mouseButton==mLeft){
+    int mx = nearestMultOf(mouseX, radius);
+    int my = nearestMultOf(mouseY, radius);
+    long p = mx*1000+ my;
+    int col = color( random(255), random(255), random(255) );
+    nodes.put( p, col);
+    names.put(p, ""+randomChar());
+    println("node "+p+" "+col);
+  }
+  
+  // middle mouse
+  if(mouseButton==mMid){
+    mDownX=0;
+    mDownY=0;
+  }
+}
+
+int nearestMultOf( float number, float nearest){
+  //https://stackoverflow.com/questions/14196987/java-round-to-nearest-multiple-of-5-either-up-or-down
+  return (int) nearest*(ceil(abs(number/nearest)));
 }
 
 void keyPressed() {
