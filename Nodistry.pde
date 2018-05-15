@@ -2,11 +2,9 @@
 import java.util.Map;
 import java.util.TreeMap;
 
-//Color[] colors = 
-
-// map points to colors
-Map<Long, Integer> nodes = new TreeMap();
-Map<Long, String> names = new TreeMap();
+// map points to colors. key is "xx yy"
+Map<String, Integer> nodes = new TreeMap();
+Map<String, String> names = new TreeMap();
 
 int camX=0;
 int camY=0;
@@ -16,8 +14,8 @@ int mLeft  = 37;
 int mMid   = 3;
 int mRight = 39;
 
-//int mDownX=0;
-//int mDownY=0;
+// for debugging
+boolean SPACE=false;
 
 void setup(){
   size(800,400);
@@ -50,21 +48,35 @@ void draw(){
   // text to display variables and instructions
   drawUI();
   
+  drawNodes(); //<>//
+}
+
+void drawNodes() {
   // nodes
-  for(long nodePos:nodes.keySet()){
-    float x = floor(nodePos/1000);
+  int i=0;
+  //for(long nodePos:nodes.keySet()){
+  for(String nodePos:nodes.keySet()){
+    
+    float x = Integer.parseInt( nodePos.split(" ")[0]);
     x-=camX;
-    float y = nodePos % 1000;
+    
+    float y = Integer.parseInt( nodePos.split(" ")[1]);
     y-=camY;
+    
     int col = nodes.get(nodePos);
     fill(col);
+    
     ellipse( x,y, radius, radius );
+    if( SPACE ){
+      println("node["+i+"] @ x:"+x+" y:"+y);
+    }
     
     // name
     fill(0);
     //text(names.get(nodePos), x +(radius/4), y +(radius/4) );
     textSize( radius /2 );
     text(names.get(nodePos), x -(radius/4), y +(radius/4));
+    i++;
   }
 }
 
@@ -94,7 +106,6 @@ void drawUI(){
   textSize(  radius * 2/3.0 );
   fill(100);
   text(instruct, 10,20);
-
 }
 
 void mousePressed(){
@@ -127,13 +138,15 @@ void mouseReleased(){
     int mx = nearestMultOf(mouseX+camX, radius); // flips
     //int mx = nearestMultOf(camX-mouseX, radius);//
     //int mx = nearestMultOf(camX+mouseX, radius);
-    int my = nearestMultOf(mouseY-camY, radius);
-    println("new node x "+mx+" y "+my);
-    long p = mx*1000+ my;
+    //int my = nearestMultOf(mouseY-camY, radius);
+    int my = nearestMultOf(mouseY+camY, radius);
+    //println("new node x "+mx+" y "+my);
+    //long p = mx*1000+ my;
+    String pt = mx+" "+ my;
     int col = color( random(255), random(255), random(255) );
-    nodes.put( p, col);
-    names.put(p, ""+randomChar());
-    println("node "+p+" "+col);
+    nodes.put( pt, col);
+    names.put(pt, ""+randomChar());
+    println("node pt:"+pt+" col:"+col); //<>//
   }
   int M=3;
   if( mouseButton==M ){
@@ -142,17 +155,17 @@ void mouseReleased(){
 }
 
 int nearestMultOf( float number, float nearest){
-  println("nearestMultOf("+ number+", "+nearest+")");
+  //println("nearestMultOf("+ number+", "+nearest+")");
   //https://stackoverflow.com/questions/14196987/java-round-to-nearest-multiple-of-5-either-up-or-down
   int res = (int) nearest*(ceil(number/nearest));
-  println(" = "+res);
+  //println(" = "+res);
   return res;
 }
 
 void keyPressed() {
   int down = 40;
   int up = 38;
-  println("keyPressed: "+keyCode);
+  //println("keyPressed: "+keyCode);
   
   if(keyCode==down){
     radius--;
@@ -167,6 +180,15 @@ void keyPressed() {
   if (radius > 50) {
     radius = 50;
   }
+  
+  int spacebar=32;
+  if(keyCode==spacebar){
+    SPACE=true;
+  }
+}
+void keyReleased(){
+  //
+  SPACE=false;
 }
 
 char randomChar(){
