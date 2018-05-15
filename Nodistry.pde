@@ -16,8 +16,8 @@ int mLeft  = 37;
 int mMid   = 3;
 int mRight = 39;
 
-int mDownX=0;
-int mDownY=0;
+//int mDownX=0;
+//int mDownY=0;
 
 void setup(){
   size(800,400);
@@ -38,11 +38,14 @@ void draw(){
   }
   
   // cursor box
-  int mx = nearestMultOf(mouseX, radius);
-  int my = nearestMultOf(mouseY, radius);
-  fill(250);
-  stroke(200);
-  ellipse(mx,my,radius, radius);
+  boolean cursorHint = false;
+  if(cursorHint){
+    int mx = nearestMultOf(mouseX, radius);
+    int my = nearestMultOf(mouseY, radius);
+    fill(250);
+    stroke(200);
+    ellipse(mx,my,radius, radius);
+  }
   
   // text to display variables and instructions
   drawUI();
@@ -50,9 +53,9 @@ void draw(){
   // nodes
   for(long nodePos:nodes.keySet()){
     float x = floor(nodePos/1000);
-    x+=camX;
+    x-=camX;
     float y = nodePos % 1000;
-    y+=camY;
+    y-=camY;
     int col = nodes.get(nodePos);
     fill(col);
     ellipse( x,y, radius, radius );
@@ -74,17 +77,13 @@ void drawUI(){
   int low = height-30;
   text("mouseX: "+mouseX, 10,low);
   text("mouseY: "+mouseY, 10,low+15);
+  int worldX = camX + mouseX;
+  int worldY = camY + mouseY;
+  text("worldX: "+worldX, 10,low-35);
+  text("worldY: "+worldY, 10,low-20);
     
   text("camX: "+camX, 200,low);
   text("camY: "+camY, 200,low+15);
-  
-  text("mDownX: "+mDownX, 300,low);
-  text("mDownY: "+mDownY, 300,low+15);
-  
-  int dragX = mDownX - mouseX;
-  int dragY = mDownY - mouseY;
-  text("dragX: "+dragX, 400,low);
-  text("dragY: "+dragY, 400,low+15);
   
   text("nodeCount: "+nodes.size(), 100, low);
   text("zoom: "+radius, 100, low+15);
@@ -99,46 +98,55 @@ void drawUI(){
 }
 
 void mousePressed(){
-  
-  println("mousePressed "+mouseX+" "+mouseY);
-  if(mouseButton==mMid){
-    mDownX=mouseX;
-    mDownY=mouseY;
+  //println("mousePressed "+mouseX+" "+mouseY);
+
+  int mMid=3;
+  if( mouseButton==mMid ){
+    cursor(MOVE);
   }
 }
  
 void mouseDragged(){
-  //
-  int dragX = mDownX - mouseX;
-  int dragY = mDownY - mouseY;
+  //println("mouseDragged "+mouseX+" "+mouseY);
   
-  camX -= dragX/radius;
-  camY -= dragY/radius;
+  int mMid=3;
+  if( mouseButton==mMid ){
+    int dx = pmouseX -mouseX;
+    camX += dx;
+    
+    int dy = pmouseY -mouseY;
+    camY += dy;
+  }
 }
 
 void mouseReleased(){
   
   //left click create node
   if(mouseButton==mLeft){
-    int mx = nearestMultOf(mouseX, radius);
-    int my = nearestMultOf(mouseY, radius);
+    //int mx = nearestMultOf(mouseX-camX, radius); // flips
+    int mx = nearestMultOf(mouseX+camX, radius); // flips
+    //int mx = nearestMultOf(camX-mouseX, radius);//
+    //int mx = nearestMultOf(camX+mouseX, radius);
+    int my = nearestMultOf(mouseY-camY, radius);
+    println("new node x "+mx+" y "+my);
     long p = mx*1000+ my;
     int col = color( random(255), random(255), random(255) );
     nodes.put( p, col);
     names.put(p, ""+randomChar());
     println("node "+p+" "+col);
   }
-  
-  // middle mouse
-  if(mouseButton==mMid){
-    mDownX=0;
-    mDownY=0;
+  int M=3;
+  if( mouseButton==M ){
+    cursor(ARROW);
   }
 }
 
 int nearestMultOf( float number, float nearest){
+  println("nearestMultOf("+ number+", "+nearest+")");
   //https://stackoverflow.com/questions/14196987/java-round-to-nearest-multiple-of-5-either-up-or-down
-  return (int) nearest*(ceil(abs(number/nearest)));
+  int res = (int) nearest*(ceil(number/nearest));
+  println(" = "+res);
+  return res;
 }
 
 void keyPressed() {
