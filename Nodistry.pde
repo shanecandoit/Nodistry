@@ -3,8 +3,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 // map points to colors. key is "xx yy"
-Map<String, Integer> nodes = new TreeMap();
-Map<String, String> names = new TreeMap();
+Map<String, Node> nodes = new TreeMap();
+//Map<String, String> names = new TreeMap();
 
 int camX=0;
 int camY=0;
@@ -45,38 +45,17 @@ void draw(){
     ellipse(mx,my,radius, radius);
   }
   
-  // text to display variables and instructions
-  drawUI();
+  // nodes first
+  drawNodes();
   
-  drawNodes(); //<>//
+  // then UI on top
+  drawUI(); //<>//
 }
 
 void drawNodes() {
   // nodes
-  int i=0;
-  //for(long nodePos:nodes.keySet()){
-  for(String nodePos:nodes.keySet()){
-    
-    float x = Integer.parseInt( nodePos.split(" ")[0]);
-    x-=camX;
-    
-    float y = Integer.parseInt( nodePos.split(" ")[1]);
-    y-=camY;
-    
-    int col = nodes.get(nodePos);
-    fill(col);
-    
-    ellipse( x,y, radius, radius );
-    if( SPACE ){
-      println("node["+i+"] @ x:"+x+" y:"+y);
-    }
-    
-    // name
-    fill(0);
-    //text(names.get(nodePos), x +(radius/4), y +(radius/4) );
-    textSize( radius /2 );
-    text(names.get(nodePos), x -(radius/4), y +(radius/4));
-    i++;
+  for(Node node:nodes.values()){
+    node.draw();
   }
 }
 
@@ -134,19 +113,15 @@ void mouseReleased(){
   
   //left click create node
   if(mouseButton==mLeft){
-    //int mx = nearestMultOf(mouseX-camX, radius); // flips
-    int mx = nearestMultOf(mouseX+camX, radius); // flips
-    //int mx = nearestMultOf(camX-mouseX, radius);//
-    //int mx = nearestMultOf(camX+mouseX, radius);
-    //int my = nearestMultOf(mouseY-camY, radius);
+    int mx = nearestMultOf(mouseX+camX, radius);
     int my = nearestMultOf(mouseY+camY, radius);
-    //println("new node x "+mx+" y "+my);
-    //long p = mx*1000+ my;
     String pt = mx+" "+ my;
-    int col = color( random(255), random(255), random(255) );
-    nodes.put( pt, col);
-    names.put(pt, ""+randomChar());
-    println("node pt:"+pt+" col:"+col); //<>//
+    
+    float dx = mouseX-pmouseX;
+    float dy = mouseY-pmouseY;
+    
+    Node newNode = new Node( mx, my, dx, dy);
+    nodes.put( pt, newNode); //<>//
   }
   int M=3;
   if( mouseButton==M ){
@@ -184,6 +159,11 @@ void keyPressed() {
   int spacebar=32;
   if(keyCode==spacebar){
     SPACE=true;
+    
+    // save an image
+    String filename = "screenshot.png";
+    saveFrame(filename);
+    println("saved frame:"+filename);
   }
 }
 void keyReleased(){
@@ -195,4 +175,77 @@ char randomChar(){
   String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   int pos = floor(random(alpha.length()));
   return alpha.charAt(pos);
+}
+
+class Node {
+  int x;
+  int y;
+  int col;
+  String name;
+  float dx;
+  float dy;
+  
+  int radius = 24;
+  int repelRadius = radius*4;
+  
+  public Node(float x, float y){
+    this.x=(int)x;
+    this.y=(int)y;
+    col=color(random(255),random(255),random(255));
+    name=""+randomChar();
+  }
+  public Node(float x, float y, float dx, float dy){
+    this.x=(int)x;
+    this.y=(int)y;
+    this.dx=dx+=2*random(2);
+    this.dy=dy+=2*random(2);
+    col=color(random(255),random(255),random(255));
+    name=""+randomChar();
+  }
+  public String pt(){
+    return x+" "+y;
+  }
+  
+  void draw(){
+    float nx = this.x-camX;
+    float ny = this.y-camY;
+    
+    // update x, y
+    if(dx!=0){
+      x+=dx;
+      dx/=2;
+    }
+    if(dy!=0){
+      y+=dy;
+      dy/=2;
+    }
+    
+    // draw repel radius
+    stroke(150);
+    fill(255,0.5);
+    ellipse( nx,ny, repelRadius, repelRadius );
+    
+    // draw node
+    stroke(0);
+    fill(col);
+    ellipse( nx,ny, radius, radius );
+    if( SPACE ){
+      this.print();
+    }
+    
+    // draw name
+    fill(0);
+    //text(names.get(nodePos), x +(radius/4), y +(radius/4) );
+    textSize( radius /2 );
+    //text(names.get(nodePos), x -(radius/4), y +(radius/4));
+    //text(node.name, x -(radius/4), y +(radius/4));
+    text(name, nx -(radius/4), ny +(radius/4));
+  }
+  
+  public String toString(){
+    return "Node{ name:"+name+", x:"+x+", y:"+y+", col:"+col+", dx:"+dx+", dy:"+dy+"}";
+  }
+  public void print(){
+    println(this.toString());
+  }
 }
