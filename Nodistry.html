@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+  div.box{
+	border: 1px solid grey;
+	width: 100px;
+	height: 100px;
+	padding:5px;
+  }
+  </style>
+  <title></title>
+  <script>
+document.onclick=click;
+  function click(e)
+  {
+	var target = (e && e.target) || (event && event.srcElement);
+	var mx = e.clientX;
+	var my = e.clientY;
+	console.log('mx',mx,'my',my);
+	
+	var elemDiv = document.createElement('div');
+	elemDiv.classList.add('box')
+	elemDiv.contentEditable=true;
+	elemDiv.style.cssText = 'position:absolute; width:100px; height:100px; left:'+mx+'px; top:'+my+'px;';
+	console.log('box add', elemDiv);
+	document.body.appendChild(elemDiv);
+  }
+</script>
+</head>
+<body onclick="">
+
+  <div class="box" contentEditable="true">A this that</div>
+
+</body>
+</html>
