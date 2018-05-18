@@ -2,13 +2,11 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.TreeMap;
 
 // map points to colors. key is "xx yy"
 Map<String,  Node> nodes = new TreeMap();
-//NavigableMap<Integer, List<Node>> xs = new TreeMap();
-//NavigableMap<Integer, List<Node>> ys = new TreeMap();
+Map<Integer,  Node> inodes = new TreeMap();
 //Map<String, String> names = new TreeMap();
 
 int camX=0;
@@ -182,6 +180,7 @@ char randomChar(){
   return alpha.charAt(pos);
 }
 
+
 class Node {
   int x;
   int y;
@@ -201,22 +200,8 @@ class Node {
     
     String pt = x+" "+y;
     nodes.put( pt, this);
-    // xs
-    //List<Node> existNodes = xs.get(x);
-    //if(existNodes==null){
-    //  existNodes=new ArrayList();
-    //}
-    //existNodes.add(this);
-    //xs.put(new Integer((int)x),existNodes);
-    
-    // ys
-    //existNodes = ys.get(x);
-    //if(existNodes==null){
-    //  existNodes=new ArrayList();
-    //}
-    //existNodes.add(this);
-    //ys.put(new Integer((int)y),existNodes);
-    //assert(nodes.size()==xs.size() && xs.size()==ys.size());
+    //Map<Integer,  Node> 
+    inodes.put(inodes.size(),this);
   }
   public Node(float x, float y, float dx, float dy){
     this.x=(int)x;
@@ -228,23 +213,8 @@ class Node {
     
     String pt = x+" "+y;
     nodes.put( pt, this);
-    
-    // xs
-    //List<Node> existNodes = xs.get(x);
-    //if(existNodes==null){
-    //  existNodes=new ArrayList();
-    //}
-    //existNodes.add(this);
-    //xs.put(new Integer((int)x),existNodes);
-    
-    //// ys
-    //existNodes = ys.get(x);
-    //if(existNodes==null){
-    //  existNodes=new ArrayList();
-    //}
-    //existNodes.add(this);
-    //ys.put(new Integer((int)y),existNodes);
-    //assert(nodes.size()==xs.size() && xs.size()==ys.size());
+    //Map<Integer,  Node> 
+    inodes.put(inodes.size(),this);
   }
   public String pt(){
     return x+" "+y;
@@ -257,67 +227,16 @@ class Node {
     // update x, y
     if(dx!=0){
       
-      // keep xs accurate
-      //xs.remove(this);
-      //List<Node> prevLocNodes = xs.get(x);
-      //if(prevLocNodes==null){
-      //  prevLocNodes=new ArrayList();
-      //}
-      //// remove
-      //int ind = prevLocNodes.indexOf(this);
-      //if(ind>0){
-      //  prevLocNodes.remove(this);
-      //}
-      
       // move NEW X
       x+=dx;
       dx/=2;
       
-      // new loc
-      //List<Node> newLocNodes = xs.get(x);
-      //if(newLocNodes==null){
-      //  newLocNodes=new ArrayList();
-      //}
-      //newLocNodes.add(this);
-      
-      //xs.put(new Integer(x), this);
-      //List<Node> existNodes = xs.get(x);
-      //xs.put(new Integer((int)x),newLocNodes);
     }
     if(dy!=0){
-      //y+=dy;
-      //dy/=2;
-      
-      //// keep ys accurate
-      //ys.remove(this);
-      //ys.put(new Integer(y), this);
-      
-      // keep xs accurate
-      //xs.remove(this);
-      //List<Node> prevLocNodes = ys.get(y);
-      //if(prevLocNodes==null){
-      //  prevLocNodes=new ArrayList();
-      //}
-      //// remove
-      //int ind = prevLocNodes.indexOf(this);
-      //if(ind>0){
-      //  prevLocNodes.remove(this);
-      //}
       
       // move NEW X
       y+=dy;
       dy/=2;
-      
-      //// new loc
-      //List<Node> newLocNodes = ys.get(y);
-      //if(newLocNodes==null){
-      //  newLocNodes=new ArrayList();
-      //}
-      //newLocNodes.add(this);
-      
-      ////xs.put(new Integer(x), this);
-      ////List<Node> existNodes = xs.get(x);
-      //ys.put(new Integer((int)y),newLocNodes);
     }
     
     // draw repel radius
@@ -341,6 +260,14 @@ class Node {
     //text(node.name, x -(radius/4), y +(radius/4));
     text(name, nx -(radius/4), ny +(radius/4));
     
+    // draw lines to neighbors
+    int nearRadius = 64;
+    List<Node> nears = nearestNeighbors( nearRadius );
+    for( Node near : nears ){
+      stroke(0,0,99,99);
+      line(this.x -camX, this.y -camY, near.x -camX, near.y -camY);
+    }
+    
     // just to check
     //assert(nodes.size()==xs.size() && xs.size()==ys.size());
   }
@@ -353,43 +280,43 @@ class Node {
   }
   
   //
-  //NavigableMap<Integer, List<Node>> xs = new TreeMap();
-  //NavigableMap<Integer, List<Node>> ys = new TreeMap();
-  //public Node nearestNeighbor(){
+  Map<String, List<Node>> nearNodes = new TreeMap();
+  public List<Node> nearestNeighbors( int radius ){
     
-  //  if( xs.size() != ys.size() || nodes.size() != xs.size() ){
-  //    // reload xs and ys
-  //    for(String nodex_y : nodes.keySet()){
-  //      //
-  //      String[] x_y = nodex_y.split(" ");
-  //      int x = Integer.parseInt( x_y[0] );
-  //      int y = Integer.parseInt( x_y[1] );
-  //    }
-  //  }
+    // cache
+    if( nearNodes.containsKey(this.pt()) ){
+      return nearNodes.get( this.pt() );
+    }
+    // too big, orphan data maybe, rebuild
+    if( nearNodes.size() > inodes.size() ){
+      println("nearNodes recreate");
+      nearNodes = new TreeMap();
+    }
     
+    List<Node> nears = new ArrayList();
     
-  //  int xHi = xs.higherKey(this.x);
-  //  int xLo = xs.lowerKey(this.x);
-  //  int nearX = 0;
-  //  if( xHi - x <= x -xLo ){
-  //    nearX=xHi;
-  //  }else{
-  //    nearX=xLo;
-  //  }
+    int roundX = this.x /radius;
+    int roundY = this.y /radius;
     
-  //  int yHi = ys.higherKey(this.y);
-  //  int yLo = ys.lowerKey(this.y);
-  //  int nearY = 0;
-  //  if( yHi - y <= y -yLo ){
-  //    nearY=yHi;
-  //  }else{
-  //    nearY=yLo;
-  //  }
+    for( Node node : inodes.values() ){
+      
+      if( this == node ){
+        continue;
+      }
+      
+      int rx = node.x /radius;
+      int ry = node.y /radius;
+      if( rx == roundX ){
+        nears.add(node);
+      }
+      if( ry == roundY ){
+        nears.add(node);
+      }
+    }
     
-  //  if( nearX - x <= nearY - y ){
-  //    return xs.get( nearX );
-  //  }else{
-  //    return ys.get( nearY );
-  //  }
-  //}
+    // add cache
+    nearNodes.put( this.pt() , nears );
+    
+    return nears;
+  }
 }
