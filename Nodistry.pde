@@ -1,322 +1,358 @@
-
+ //<>// //<>//
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
-// map points to colors. key is "xx yy"
-Map<String,  Node> nodes = new TreeMap();
-Map<Integer,  Node> inodes = new TreeMap();
-//Map<String, String> names = new TreeMap();
+int RED   = color(255,0,0);
+int GREEN = color(0,255,0);
 
-int camX=0;
-int camY=0;
+int camX = 0;
+int camY = 0;
 
-int radius = 24;
-int mLeft  = 37;
-int mMid   = 3;
-int mRight = 39;
+int msRdownX=0;
+int msRdownY=0;
 
-// for debugging
-boolean SPACE=false;
+//int radius = 32;
+float zoom = 1;
+int   radius = floor(32*zoom);
+
+String status = "middle mouse pans camera, scrollwheel zooms";
+
+// list of nodes
+List<Node> nodes;
+
+// for right click connections
+Node edgeBegin;
+Node edgeEnd;
 
 void setup(){
   size(800,400);
+  
+  nodes = createNodes();
 }
 
+void vert(int x,int col){
+  stroke(col);
+  line(x-camX, 0, x-camX, height);
+}
+void horiz(int y, int col){
+  stroke(col);
+  line(0, y-camY, width, y-camY);
+}
 void draw(){
-  background(250);
   
-  // bg grid
-  stroke(240);
-  for(int x=0; x<width; x+=radius){
-    for(int y=radius; y<height; y+=radius){
-      // vert
-      line(x,radius,x,height);
-      // horiz
-      line(0,y,width,y);
+  background(200);
+  grid(radius);
+  
+  text("camX "+camX, 10, 15);
+  text("camY "+camY, 10, 30);
+  text("zoom "+zoom, 10, 45);
+  text("status: "+status, 10, height-20);
+  
+  text("mouseX "+mouseX, 100, 15);
+  text("mouseY "+mouseY, 100, 30);
+  
+  //rect(0-camX, 0-camY, radius, radius);
+  
+  // horiz axis
+  //stroke(RED);
+  //line(0, -camY, width, -camY);
+  horiz(0, RED);
+  
+  // vert axis
+  //stroke(GREEN);
+  //line(-camX, 0, -camX, height);
+  vert(0,GREEN);
+  
+  // draw nodes
+  nodesDraw( nodes );
+  
+  // draw line on right click
+  if(mouseButton==mRight){
+    //
+    stroke(0x0000ff);
+    if(msRdownX!=0 && msRdownX!=0){
+      line(msRdownX, msRdownY, mouseX, mouseY);
     }
   }
   
-  // cursor box
-  boolean cursorHint = false;
-  if(cursorHint){
-    int mx = nearestMultOf(mouseX, radius);
-    int my = nearestMultOf(mouseY, radius);
-    fill(250);
-    stroke(200);
-    ellipse(mx,my,radius, radius);
-  }
-  
-  // nodes first
-  drawNodes();
-  
-  // then UI on top
-  drawUI(); //<>//
 }
 
-void drawNodes() {
-  // nodes
-  for(Node node:nodes.values()){
-    node.draw();
+void grid(int space){
+  stroke(190);
+  int buffer=2*space;
+  for(int y=buffer; y<height; y+= space){
+    // horiz
+    line(0,y,width,y);
+  }
+  for(int x=0; x<width; x+= space){
+    // vert
+    line(x,buffer,x,height);
   }
 }
 
-void drawUI(){
-  //
-  //textSize(12);
-  textSize(radius/2);
-  fill(0);
-  stroke(0);
-  int low = height-30;
-  text("mouseX: "+mouseX, 10,low);
-  text("mouseY: "+mouseY, 10,low+15);
-  int worldX = camX + mouseX;
-  int worldY = camY + mouseY;
-  text("worldX: "+worldX, 10,low-35);
-  text("worldY: "+worldY, 10,low-20);
-    
-  text("camX: "+camX, 200,low);
-  text("camY: "+camY, 200,low+15);
-  
-  text("nodeCount: "+nodes.size(), 100, low);
-  text("zoom: "+radius, 100, low+15);
-  
-  // instructions
-  String instruct ="Left-click to drop nodes with random names and colors";
-  //textSize(16);
-  textSize(  radius * 2/3.0 );
-  fill(100);
-  text(instruct, 10,20);
-}
-
+int mLeft=37;
+int mMid=3;
+int mRight=39;
 void mousePressed(){
-  //println("mousePressed "+mouseX+" "+mouseY);
-
-  int mMid=3;
-  if( mouseButton==mMid ){
-    cursor(MOVE);
+  //println("mousePressed ",mouseButton);
+  if(mouseButton==mMid){
+    status = "middle mouse pans camera";
   }
-}
- 
-void mouseDragged(){
-  //println("mouseDragged "+mouseX+" "+mouseY);
   
-  int mMid=3;
-  if( mouseButton==mMid ){
-    int dx = pmouseX -mouseX;
-    camX += dx;
+  if(mouseButton==mRight){
+    cursor(CROSS);
+    status = "right mouse connects nodes";
     
-    int dy = pmouseY -mouseY;
-    camY += dy;
+    msRdownX=mouseX;
+    msRdownY=mouseY;
+    
+    List<Node> beginNodes = nodesUnderMouse(nodes);
+    if(beginNodes.size()>0){
+      edgeBegin = beginNodes.get(0);
+      println("connect node "+edgeBegin.id+" to ...");
+    }
   }
-}
-
-void mouseReleased(){
   
-  //left click create node
+  // click on status to get new tip
+  // YAGNI
+  if(mouseButton==mLeft && 
+    (mouseX>=10 && mouseX<=100) &&
+    (mouseY>=height-45 && mouseY<=height-5) ){
+    status= "new tip."+mouseX+" "+mouseY;
+  }
+  
   if(mouseButton==mLeft){
-    int mx = nearestMultOf(mouseX+camX, radius);
-    int my = nearestMultOf(mouseY+camY, radius);
-    String pt = mx+" "+ my;
-    
-    float dx = mouseX-pmouseX;
-    float dy = mouseY-pmouseY;
-    
-    Node newNode = new Node( mx, my, dx, dy);
-    //nodes.put( pt, newNode); //<>//
-  }
-  int M=3;
-  if( mouseButton==M ){
-    cursor(ARROW);
+    //
   }
 }
 
-int nearestMultOf( float number, float nearest){
-  //println("nearestMultOf("+ number+", "+nearest+")");
-  //https://stackoverflow.com/questions/14196987/java-round-to-nearest-multiple-of-5-either-up-or-down
-  int res = (int) nearest*(ceil(number/nearest));
-  //println(" = "+res);
-  return res;
+void mouseDragged(){
+  if(mouseButton==mMid){
+    cursor(MOVE);
+    //int dx = mouseX-pmouseX;
+    //int dy = mouseY-pmouseY;
+    int dx = pmouseX-mouseX;
+    int dy = pmouseY-mouseY;
+    camX+=dx;
+    camY+=dy;
+  }
+  
+  
+}
+void mouseReleased(){
+  cursor(ARROW);
+  
+  //
+  List<Node> endNodes = nodesUnderMouse(nodes);
+  if(endNodes.size()>0){
+    Node edgeEnd = endNodes.get(0);
+    println("connect node "+edgeBegin.id+" to "+edgeEnd.id);
+    edgeBegin.addEdge(edgeEnd);
+    
+    // TODO store this connection somehow
+    
+    // reset it
+    edgeBegin=null;
+    edgeEnd=null;
+  }
+  
+  msRdownX=0;
+  msRdownY=0;
+}
+void mouseWheel(MouseEvent e) {
+  float co = e.getCount();
+  //println("wheel count "+co);
+  if (co>0){
+    zoom += 0.1;
+  }else{
+    zoom -= 0.1;
+  }
+  if(zoom<0.1){
+    zoom=0.1;
+  }
+  if(zoom>10){
+    zoom=10;
+  }
+  zoom = round(zoom*10);
+  zoom /= 10;
+  radius = floor(32*zoom);
+}
+void mouseMoved(){
+  
+  // get the nodes under the mouse
+  List<Node> underMouse = nodesUnderMouse( nodes );
+  int size=underMouse.size();
+  if(size>0){
+    println("underMouse "+size);
+    status = "over "+size+" nodes";
+  }else{
+    status ="";
+  }
 }
 
-void keyPressed() {
-  int down = 40;
-  int up = 38;
-  //println("keyPressed: "+keyCode);
-  
-  if(keyCode==down){
-    radius--;
-  }else if(keyCode==up){
-    radius++;
+void keyPressed(){
+  println("keyPressed "+keyCode+" "+key);
+  if(key=='r'){
+    camX*=0.9;
+    camY*=0.9;
   }
   
-  if (radius < 0) {
-    radius = 0;
-  }
-  
-  if (radius > 50) {
-    radius = 50;
-  }
-  
-  int spacebar=32;
-  if(keyCode==spacebar){
-    SPACE=true;
-    
-    // save an image
+  // save an image
+  if(key==' '){
     String filename = "screenshot.png";
     saveFrame(filename);
     println("saved frame:"+filename);
   }
 }
-void keyReleased(){
-  //
-  SPACE=false;
+
+String node(int x, int y, int id, int colr, String name){
+  String res= x+" "+y+" "+id+" "+colr+" "+name;
+  println("node "+res);
+  return res;
 }
 
-char randomChar(){
-  String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  int pos = floor(random(alpha.length()));
-  return alpha.charAt(pos);
+
+
+List<Node> createNodes(){
+  int count = 10;
+  List<Node> nodes = new ArrayList();
+  for(int i=0;i<count;i++){
+    Node node = new Node();
+    nodes.add( node );
+  }
+  return nodes;
 }
 
+List<Node> nodesUnderMouse( List<Node> nodes ){
+  boolean debugMouse=false;
+  List<Node> underMouse = new ArrayList();
+  for(Node node: nodes){
+    if( node.x-camX-radius <= mouseX ){
+      if(debugMouse){
+        vert(node.x-radius, RED);
+      }
+      if( node.x-camX+radius >= mouseX ){
+        // x under
+        
+        if(debugMouse){
+        vert(node.x+radius, RED);
+        }
+        //println("mouseX "+mouseX);
+        //println("mouseY "+mouseY);
+        //println("x nodesUnderMouse "+node.id);
+        if( node.y-camY-radius <= mouseY ){
+          if(debugMouse){
+            horiz(node.y-radius, RED);
+          }
+          if(node.y-camY+radius >= mouseY ){
+            // y under
+            
+            if(debugMouse){
+              horiz(node.y+radius, RED);
+            }
+            underMouse.add(node);
+            println("nodesUnderMouse "+node.id);
+          }
+        }
+      }
+    }
+  }
+  return underMouse;
+}
+
+void nodesDraw( List<Node> nodes ){
+  for(Node node: nodes){
+    node.draw();
+  }
+  for(Node node: nodes){
+    node.drawEdges();
+  }
+}
 
 class Node {
-  int x;
-  int y;
-  int col;
+  
+  int x,y,id,col;
   String name;
-  float dx;
-  float dy;
-  
-  int radius = 24;
-  int repelRadius = radius*4;
-  
-  public Node(float x, float y){
-    this.x=(int)x;
-    this.y=(int)y;
-    col=color(random(255),random(255),random(255));
-    name=""+randomChar();
-    
-    String pt = x+" "+y;
-    nodes.put( pt, this);
-    //Map<Integer,  Node> 
-    inodes.put(inodes.size(),this);
+  Node(int x, int y, int id, int colr, String name){
+    this.x=x;this.y=y;this.id=id;this.col=colr;this.name=name;
   }
-  public Node(float x, float y, float dx, float dy){
-    this.x=(int)x;
-    this.y=(int)y;
-    this.dx=dx+=2*random(2);
-    this.dy=dy+=2*random(2);
-    col=color(random(255),random(255),random(255));
-    name=""+randomChar();
-    
-    String pt = x+" "+y;
-    nodes.put( pt, this);
-    //Map<Integer,  Node> 
-    inodes.put(inodes.size(),this);
+  Node(){
+    x = floor(random(width));
+    y = floor(random(height));
+    id = (int)random(9999);
+    col = color( random(255),random(255), random(255)); 
+    name = ""+id;
   }
-  public String pt(){
-    return x+" "+y;
+  void move(){
+    if(this.x%radius!=0){
+      this.x-=random(1.1);
+    }
+    if(this.y%radius!=0){
+      this.y-=random(1.1);
+    }
   }
-  
   void draw(){
-    float nx = this.x-camX;
-    float ny = this.y-camY;
+    move();
     
-    // update x, y
-    if(dx!=0){
-      
-      // move NEW X
-      x+=dx;
-      dx/=2;
-      
-    }
-    if(dy!=0){
-      
-      // move NEW X
-      y+=dy;
-      dy/=2;
-    }
-    
-    // draw repel radius
-    stroke(150);
-    fill(255,0.5);
-    ellipse( nx,ny, repelRadius, repelRadius );
-    
-    // draw node
-    stroke(0);
     fill(col);
-    ellipse( nx,ny, radius, radius );
-    if( SPACE ){
-      this.print();
-    }
-    
-    // draw name
+    stroke(0);
+    rectMode(RADIUS);
+    rect(x-camX, y-camY, radius, radius);
     fill(0);
-    //text(names.get(nodePos), x +(radius/4), y +(radius/4) );
-    textSize( radius /2 );
-    //text(names.get(nodePos), x -(radius/4), y +(radius/4));
-    //text(node.name, x -(radius/4), y +(radius/4));
-    text(name, nx -(radius/4), ny +(radius/4));
+    textSize(radius/2);
+    text(""+id, x-camX , y-camY +radius/2);
     
-    // draw lines to neighbors
-    int nearRadius = 64;
-    List<Node> nears = nearestNeighbors( nearRadius );
-    for( Node near : nears ){
-      stroke(0,0,99,99);
-      line(this.x -camX, this.y -camY, near.x -camX, near.y -camY);
+    boolean showAttract=true;
+    if(showAttract){
+      //
+      noFill();
+      stroke(0,150,0,50);
+      ellipse(x-camX, y-camY, attractRadius(), attractRadius());
+      fill(0);
     }
     
-    // just to check
-    //assert(nodes.size()==xs.size() && xs.size()==ys.size());
+    boolean showRepel=true;
+    if(showRepel){
+      //
+      noFill();
+      stroke(150,0,0,50);
+      ellipse(x-camX, y-camY, repelRadius(), repelRadius());
+      fill(0);
+    }
   }
   
-  public String toString(){
-    return "Node{ name:"+name+", x:"+x+", y:"+y+", col:"+col+", dx:"+dx+", dy:"+dy+"}";
-  }
-  public void print(){
-    println(this.toString());
+  void drawEdges(){
+    // edges
+    for(Node targ: edges){
+      stroke(0x0000ff);
+      //rect(x-camX, y-camY, radius, radius);
+      line( this.x-camX, this.y-camY, targ.x-camX, targ.y-camY);
+    }
   }
   
-  //
-  Map<String, List<Node>> nearNodes = new TreeMap();
-  public List<Node> nearestNeighbors( int radius ){
-    
-    // cache
-    if( nearNodes.containsKey(this.pt()) ){
-      return nearNodes.get( this.pt() );
+  String toString(){
+    String res= "Node:{"+x+" "+y+" "+id+" "+col+" "+name+"}";
+    println("node.toString() "+res);
+    return res;
+  }
+  
+  // nodes want to be close
+  int attractRadius(){
+    return radius* 10;
+  }
+  
+  // but not too close
+  int repelRadius(){
+    return radius*5;
+  }
+  
+  // edges
+  List<Node> edges = new ArrayList();
+  void addEdge(Node sink){
+    // check whether this is already an edge?
+    if( edges.contains(sink) ){
+      return;// dont add again
     }
-    // too big, orphan data maybe, rebuild
-    if( nearNodes.size() > inodes.size() ){
-      println("nearNodes recreate");
-      nearNodes = new TreeMap();
-    }
-    
-    List<Node> nears = new ArrayList();
-    
-    int roundX = this.x /radius;
-    int roundY = this.y /radius;
-    
-    for( Node node : inodes.values() ){
-      
-      if( this == node ){
-        continue;
-      }
-      
-      int rx = node.x /radius;
-      int ry = node.y /radius;
-      if( rx == roundX ){
-        nears.add(node);
-      }
-      if( ry == roundY ){
-        nears.add(node);
-      }
-    }
-    
-    // add cache
-    nearNodes.put( this.pt() , nears );
-    
-    return nears;
+    edges.add(sink);
   }
 }
